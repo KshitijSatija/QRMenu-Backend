@@ -3,33 +3,35 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const authRoutes = require("./routes/auth.route");
-const user = require("./routes/user.route");
-const validateSession= require("./middleware/auth.middleware");
+const userRoutes = require("./routes/user.route");
+const validateSession = require("./middleware/auth.middleware");
 const keepAlive = require("./keepAlive");
+
 const app = express();
 
-//Middleware
+//middleware
 app.use(cors());
 app.use(express.json());
 app.use(validateSession);
-//Routes
-app.use("/auth", authRoutes);
-app.use("/user", user);
 
-//keepalive ping
+//routes
+app.use("/auth", authRoutes);
+app.use("/user", userRoutes);
+
+//keep-alive ping
 app.get("/ping", (req, res) => {
   res.status(200).send("pong");
 });
 
-//MongoDB connection
+//mongoDB connection
 mongoose
-  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .connect(process.env.MONGO_URI)
   .then(() => console.log("Connected to MongoDB"))
   .catch((err) => console.error("MongoDB connection error:", err));
 
-//Start server
+//server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
+  console.log(`Server running on port ${PORT}`);
   keepAlive();
 });
