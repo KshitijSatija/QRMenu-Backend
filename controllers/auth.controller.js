@@ -25,10 +25,18 @@ exports.login = async (req, res) => {
       req.socket?.remoteAddress || // Use remoteAddress if available
       req.connection?.remoteAddress || // Fallback to connection address
       "IP Not Found"; // Default case
+    
 
+    
+      
     // Create a new session
     const sessionHash = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 1-day expiration
+    const nowUtc = new Date();
+    const nowIst = new Date(nowUtc.getTime() + (5.5 * 60 * 60 * 1000)); // Convert UTC to IST
+
+    const expiresAt = new Date(nowIst.getTime() + 24 * 60 * 60 * 1000); // Add 1 day
+
+    //const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 1-day expiration
 
     const session = new Session({ userId: user._id, sessionHash, expiresAt, ipAddress: userIP });
     await session.save();
