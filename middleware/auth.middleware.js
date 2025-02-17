@@ -3,7 +3,7 @@ const User = require('../models/user.model');
 
 const validateSession = async (req, res, next) => {
   
-  if (req.path === '/auth/login' || req.path === '/ping') {
+  if (req.path === '/auth/login' || req.path === '/ping' || req.path==='/auth/send-otp' || req.path==='/auth/verify-otp') {
     return next(); 
   }
 

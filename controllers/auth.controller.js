@@ -3,6 +3,131 @@ const crypto = require("crypto");
 const User = require("../models/user.model");
 const Session = require("../models/session.model");
 const LoginAttempt = require("../models/LoginAttempt.model");
+const { sendLoginConfirmation, sendRegistrationConfirmation,sendOTPEmail } = require('../utils/emailService');
+const OTPVerification = require('../models/OTPVerification.model');
+
+// Step 1: Generate OTP and send it to the user
+exports.sendOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Check if the user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "Email already registered." });
+    }
+
+    // Generate a 6-digit OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const expiry = new Date(Date.now() + 10 * 60 * 1000); // OTP valid for 10 minutes
+
+    // Store OTP in the database (overwrite if exists)
+    await OTPVerification.findOneAndUpdate(
+      { email },
+      { otp, expiry },
+      { upsert: true, new: true }
+    );
+
+    // Send OTP to the user's email
+    await sendOTPEmail(email, otp);
+
+    res.status(200).json({ message: "OTP sent to email. Please verify to complete registration." });
+  } catch (err) {
+    console.error("Error sending OTP:", err);
+    res.status(500).json({ message: "Server error. Please try again later." });
+  }
+};
+
+exports.verifyOTPAndRegister = async (req, res) => {
+  try {
+    const { email, otp, username, password, firstName, lastName, mobileno, dob } = req.body;
+
+    // Validate input
+    if (!email || !otp || !username || !password || !firstName || !lastName || !mobileno || !dob) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    // Find OTP record
+    const otpRecord = await OTPVerification.findOne({ email, otp });
+    if (!otpRecord) {
+      return res.status(400).json({ message: "Invalid OTP." });
+    }
+
+    // Check if OTP has expired
+    if (otpRecord.expiry < new Date()) {
+      return res.status(400).json({ message: "OTP has expired. Please request a new one." });
+    }
+
+    // OTP is valid, so proceed with user registration
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new User({
+      username,
+      email,
+      password: hashedPassword,
+      firstName,
+      lastName,
+      mobileno,
+      dob,
+      role: "user",  // Default role
+    });
+
+    // Save the user in the database
+    await newUser.save();
+
+    // Send registration confirmation email
+    await sendRegistrationConfirmation(newUser.email, newUser.username, newUser.firstName);
+
+    // Remove OTP record after successful registration
+    await OTPVerification.deleteOne({ email });
+
+    res.status(201).json({ message: "User registered successfully." });
+  } catch (err) {
+    console.error("Error during OTP verification:", err);
+    res.status(500).json({ message: "Server error. Please try again later." });
+  }
+};
+
+// Register a new user
+exports.register = async (req, res) => {
+  try {
+    const { username, email, password, firstName, lastName, mobileno, dob } = req.body;
+
+    // Validate input
+    if (!username || !email || !password || !firstName || !lastName || !mobileno || !dob) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
+
+    // Check if the user already exists
+    const existingUser = await User.findOne({ $or: [{ username }, { email }, { mobileno }] });
+    if (existingUser) {
+      return res.status(400).json({ message: "Username, email, or mobile number already taken." });
+    }
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create a new user with the provided data
+    const newUser = new User({
+      username,
+      email,
+      password: hashedPassword,
+      firstName,
+      lastName,
+      mobileno,
+      dob,
+      role: "user", // Default role
+    });
+
+    // Save the user in the database
+    await newUser.save();
+    await sendRegistrationConfirmation(newUser.email, newUser.username,newUser.firstName);
+    res.status(201).json({ message: "User registered successfully." });
+  } catch (err) {
+    console.error("Error during registration:", err);
+    res.status(500).json({ message: "Server error. Please try again later." });
+  }
+};
 
 
 const MAX_ATTEMPTS = 5; //Max failed attempts before blocking
@@ -60,6 +185,8 @@ exports.login = async (req, res) => {
     await session.save();
 
     console.log("Session created for user:", username, "Session Hash:", sessionHash, "IP Address:", userIP);
+    await sendLoginConfirmation(user.email, user.username, user.firstName);
+
     res.status(200).json({ sessionHash });
   } catch (error) {
     console.error("Error during login:", error);
@@ -141,3 +268,5 @@ exports.authMiddleware = async (req, res, next) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
+

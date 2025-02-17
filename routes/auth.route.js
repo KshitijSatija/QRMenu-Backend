@@ -3,6 +3,10 @@ const authController = require("../controllers/auth.controller");
 
 const router = express.Router();
 
+//otp routes
+router.post("/send-otp", authController.sendOTP);
+router.post("/verify-otp",authController.verifyOTPAndRegister);
+
 // Login Route
 router.post("/login", authController.login);
 
