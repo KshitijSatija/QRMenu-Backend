@@ -14,24 +14,20 @@ const validateSession = async (req, res, next) => {
   }
 
   try {
-    // Find the session by session hash
     const session = await Session.findOne({ sessionHash });
 
     if (!session || new Date(session.expiresAt) < new Date()) {
       return res.status(401).json({ message: "Session is invalid or expired" });
     }
 
-    // Find the user associated with this session
     const user = await User.findById(session.userId);
 
     if (!user) {
       return res.status(401).json({ message: "User not found" });
     }
 
-    // Attach user to request object for access in the route handlers
     req.user = user;
 
-    // Continue to the next middleware or route handler
     next();
   } catch (error) {
     console.error("Error validating session:", error);
