@@ -18,6 +18,8 @@ app.use(validateSession);
 app.use("/auth", authRoutes);
 app.use("/user", userRoutes);
 
+//IP tracking
+app.set("trust proxy", true);
 //keep-alive ping
 app.get("/ping", (req, res) => {
   res.status(200).send("pong");
