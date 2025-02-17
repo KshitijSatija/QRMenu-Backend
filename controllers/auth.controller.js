@@ -2,6 +2,9 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const User = require("../models/user.model");
 const Session = require("../models/session.model");
+const LoginAttempt = require("../models/LoginAttempt.model"); // Assuming you've created this model
+const MAX_ATTEMPTS = 5; // Max failed attempts before blocking
+const BLOCK_TIME = 30 * 60 * 1000; // Block for 30 minutes (in milliseconds)
 
 exports.login = async (req, res) => {
   const { username, password } = req.body;
@@ -9,6 +12,36 @@ exports.login = async (req, res) => {
 
   try {
     const user = await User.findOne({ username });
+    const userIP = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || req.socket?.remoteAddress || req.connection?.remoteAddress || "IP Not Found";
+
+    // Convert current time to IST
+    const nowUtc = new Date();
+    const nowIst = new Date(nowUtc.getTime() + (5.5 * 60 * 60 * 1000)); // Convert UTC to IST
+    const attemptTime = nowIst; // Record the login attempt time in IST
+
+    // Check failed login attempts in the last BLOCK_TIME (30 minutes)
+    const failedAttempts = await LoginAttempt.countDocuments({
+      ipAddress: userIP,
+      success: false,
+      timestamp: { $gte: new Date(Date.now() - BLOCK_TIME) },
+    });
+
+    // If the number of failed attempts exceeds MAX_ATTEMPTS, block login
+    if (failedAttempts >= MAX_ATTEMPTS) {
+      return res.status(429).json({ message: "Too many failed attempts. Try again later." });
+    }
+
+    // Log the login attempt (success or failure)
+    const loginAttempt = {
+      ipAddress: userIP,
+      username,
+      success: false,  // Initially mark as failed, we'll change it after password check
+      timestamp: attemptTime,
+    };
+
+    // Log the failed attempt for now (we'll change success flag after validation)
+    await LoginAttempt.create(loginAttempt);
+
     if (!user) {
       console.log("User not found:", username);
       return res.status(401).json({ message: "Invalid username or password" });
@@ -17,26 +50,17 @@ exports.login = async (req, res) => {
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       console.log("Invalid password for user:", username);
+      // Update the login attempt to mark it as failed
+      await LoginAttempt.findOneAndUpdate({ username, ipAddress: userIP, timestamp: attemptTime }, { success: false });
       return res.status(401).json({ message: "Invalid username or password" });
     }
 
-    // Capture the user's IP address
-    const userIP = req.headers["x-forwarded-for"]?.split(",")[0]?.trim() || // Use first IP if behind a proxy
-      req.socket?.remoteAddress || // Use remoteAddress if available
-      req.connection?.remoteAddress || // Fallback to connection address
-      "IP Not Found"; // Default case
-    
+    // After successful login, update login attempt to mark it as successful
+    await LoginAttempt.findOneAndUpdate({ username, ipAddress: userIP, timestamp: attemptTime }, { success: true });
 
-    
-      
     // Create a new session
     const sessionHash = crypto.randomBytes(32).toString("hex");
-    const nowUtc = new Date();
-    const nowIst = new Date(nowUtc.getTime() + (5.5 * 60 * 60 * 1000)); // Convert UTC to IST
-
     const expiresAt = new Date(nowIst.getTime() + 24 * 60 * 60 * 1000); // Add 1 day
-
-    //const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 1-day expiration
 
     const session = new Session({ userId: user._id, sessionHash, expiresAt, ipAddress: userIP });
     await session.save();
@@ -48,6 +72,8 @@ exports.login = async (req, res) => {
     res.status(500).json({ message: "Server error", error });
   }
 };
+
+
 
 // Logout Controller
 exports.logout = async (req, res) => {
