@@ -5,7 +5,7 @@ const cors = require("cors");
 const authRoutes = require("./routes/auth.route");
 const validateSession = require("./middleware/auth.middleware");
 const keepAlive = require("./keepAlive");
-
+const userRoutes=require("./routes/user.route");
 const app = express();
 
 //middleware
@@ -15,6 +15,7 @@ app.use(validateSession);
 
 //routes
 app.use("/auth", authRoutes);
+app.use("/user",userRoutes);
 
 //IP tracking
 app.set("trust proxy", true);

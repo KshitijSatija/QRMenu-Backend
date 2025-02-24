@@ -59,7 +59,7 @@ exports.verifyOTPAndRegister = async (req, res) => {
     }
 
     // OTP is valid, so proceed with user registration
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, process.env.SALT);
 
     const newUser = new User({
       username,
@@ -105,7 +105,7 @@ exports.register = async (req, res) => {
     }
 
     // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, process.env.SALT);
 
     // Create a new user with the provided data
     const newUser = new User({
