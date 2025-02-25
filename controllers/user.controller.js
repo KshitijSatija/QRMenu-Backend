@@ -24,6 +24,7 @@ exports.getUserProfile = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 exports.getSignInLogs = async (req, res) => {
   try {
     const authHeader = req.headers.authorization;

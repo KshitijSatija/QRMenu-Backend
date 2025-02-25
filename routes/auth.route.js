@@ -19,4 +19,11 @@ router.get("/validate-session", authController.validateSession);
 // Protected Route Example
 router.get("/protected", authController.authMiddleware, authController.protectedRoute);
 
+
+//change password
+router.post("/change-password", authController.authMiddleware, authController.changePassword);
+
+//deactive/delete route
+
+router.post("/delete-account", authController.authMiddleware, authController.deleteAccount);
 module.exports = router;

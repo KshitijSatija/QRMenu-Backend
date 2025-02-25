@@ -58,6 +58,11 @@ exports.verifyOTPAndRegister = async (req, res) => {
       return res.status(400).json({ message: "OTP has expired. Please request a new one." });
     }
 
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%^&+=!])[a-zA-Z\d@#$%^&+=!]{8,}$/;
+
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({ message: "New password does not meet security requirements" });
+    }
     // OTP is valid, so proceed with user registration
     const hashedPassword = await bcrypt.hash(password, process.env.SALT);
 
@@ -240,28 +245,28 @@ exports.protectedRoute = async (req, res) => {
 // Middleware for checking session validity
 exports.authMiddleware = async (req, res, next) => {
   const sessionHash = req.headers["authorization"]?.split(" ")[1];
-  console.log("Authorization header received:", sessionHash);
+  //console.log("Authorization header received:", sessionHash);
 
   if (!sessionHash) {
-    console.log("Authorization header missing or invalid");
+    //console.log("Authorization header missing or invalid");
     return res.status(401).json({ message: "Unauthorized" });
   }
 
   try {
     const session = await Session.findOne({ sessionHash });
     if (!session) {
-      console.log("Session not found for session hash:", sessionHash);
+      //console.log("Session not found for session hash:", sessionHash);
       return res.status(401).json({ message: "Session not found" });
     }
 
     if (session.expiresAt < Date.now()) {
-      console.log("Session expired:", sessionHash);
+      //console.log("Session expired:", sessionHash);
       await Session.deleteOne({ _id: session._id });
       return res.status(401).json({ message: "Session expired" });
     }
 
     req.userId = session.userId;
-    console.log("Session is valid for user:", req.userId);
+    //console.log("Session is valid for user:", req.userId);
     next();
   } catch (error) {
     console.error("Error in session validation:", error);
@@ -270,3 +275,53 @@ exports.authMiddleware = async (req, res, next) => {
 };
 
 
+
+// Change Password
+exports.changePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Validate current password
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) return res.status(400).json({ message: "Incorrect current password" });
+
+    // Validate new password format
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%^&+=!])[a-zA-Z\d@#$%^&+=!]{8,}$/;
+
+    if (!passwordRegex.test(newPassword)) {
+      return res.status(400).json({ message: "New password does not meet security requirements" });
+    }
+
+    // Hash and save new password
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(newPassword, salt);
+    await user.save();
+
+    res.json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+// Deactivate user account
+exports.deleteAccount = async (req, res) => {
+  try {
+    
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Deactivate user account
+    user.active = false;
+    await user.save();
+
+    res.json({ message: "Your account has been deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting account:", error);
+    res.status(500).json({ message: "Server error, please try again later." });
+  }
+};

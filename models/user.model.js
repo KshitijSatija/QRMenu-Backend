@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema({
   mobileno: { type: Number, unique: true},
   dob: { type: Date},
   role: { type: String, default: "user" }, 
+  active: {type: Boolean, required: true, default: true},
 });
 
 
