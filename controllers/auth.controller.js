@@ -64,7 +64,7 @@ exports.verifyOTPAndRegister = async (req, res) => {
       return res.status(400).json({ message: "New password does not meet security requirements" });
     }
     // OTP is valid, so proceed with user registration
-    const hashedPassword = await bcrypt.hash(password, process.env.SALT);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = new User({
       username,
@@ -110,7 +110,7 @@ exports.register = async (req, res) => {
     }
 
     // Hash the password
-    const hashedPassword = await bcrypt.hash(password, process.env.SALT);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create a new user with the provided data
     const newUser = new User({
@@ -319,7 +319,7 @@ exports.deleteAccount = async (req, res) => {
     user.active = false;
     await user.save();
 
-    res.json({ message: "Your account has been deleted successfully." });
+    res.status(200).json({ message: "Your account has been deleted successfully." });
   } catch (error) {
     console.error("Error deleting account:", error);
     res.status(500).json({ message: "Server error, please try again later." });
