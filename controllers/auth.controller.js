@@ -3,7 +3,7 @@ const crypto = require("crypto");
 const User = require("../models/user.model");
 const Session = require("../models/session.model");
 const LoginAttempt = require("../models/LoginAttempt.model");
-const { sendLoginConfirmation, sendRegistrationConfirmation,sendOTPEmail } = require('../utils/emailService');
+const { sendLoginConfirmation, sendRegistrationConfirmation,sendOTPEmail, sendDeleteOTPEmail} = require('../utils/emailService');
 const OTPVerification = require('../models/OTPVerification.model');
 
 // Step 1: Generate OTP and send it to the user
@@ -25,7 +25,8 @@ exports.sendOTP = async (req, res) => {
     await OTPVerification.findOneAndUpdate(
       { email },
       { otp, expiry },
-      { upsert: true, new: true }
+      { upsert: true, new: true },
+      { type: "registration"},
     );
 
     // Send OTP to the user's email
@@ -309,7 +310,7 @@ exports.changePassword = async (req, res) => {
 
 
 // Deactivate user account
-exports.deleteAccount = async (req, res) => {
+/*exports.deleteAccount = async (req, res) => {
   try {
     
     const user = await User.findById(req.user._id);
@@ -323,5 +324,79 @@ exports.deleteAccount = async (req, res) => {
   } catch (error) {
     console.error("Error deleting account:", error);
     res.status(500).json({ message: "Server error, please try again later." });
+  }
+};*/
+
+exports.sendDeleteOTP = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Check if the user already exists
+    const User = await User.findOne({ email });
+    
+
+    // Generate a 6-digit OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const expiry = new Date(Date.now() + 10 * 60 * 1000); // OTP valid for 10 minutes
+
+    // Store OTP in the database (overwrite if exists)
+    await OTPVerification.findOneAndUpdate(
+      { email },
+      { otp, expiry },
+      { upsert: true, new: true },
+      { type: "deletion" }
+
+    );
+
+    // Send OTP to the user's email
+    await sendDeleteOTPEmail(email, otp);
+
+    res.status(200).json({ message: "OTP sent to email for account deletion." });
+  } catch (err) {
+    console.error("Error sending OTP:", err);
+    res.status(500).json({ message: "Server error. Please try again later." });
+  }
+};
+
+
+
+exports.verifyOTPAndDelete = async (req, res) => {
+  try {
+    const { sessionHash } = req.body;
+
+    // Validate input
+    if (!sessionHash) {
+      return res.status(400).json({ message: "User Issue." });
+    }
+
+    // OTP is valid, so proceed with user registration
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Find OTP record
+    const otpRecord = await OTPVerification.findOne({ email, otp });
+    if (!otpRecord) {
+      return res.status(400).json({ message: "Invalid OTP." });
+    }
+
+    // Check if OTP has expired
+    if (otpRecord.expiry < new Date()) {
+      return res.status(400).json({ message: "OTP has expired. Please request a new one." });
+    }
+
+    // Deactivate user account
+    user.active = false;
+    await user.save();
+    // await sendDeletionMail(User.email, User.username, User.firstName, User.lastName);
+    // Remove OTP record after successful registration
+    await OTPVerification.deleteOne({ email });
+
+    res.status(200).json({ message: "Your account has been deleted successfully." });
+    // Send registration confirmation email
+    // await sendRegistrationConfirmation(newUser.email, newUser.username, newUser.firstName);
+  
+  } catch (err) {
+    console.error("Error during OTP verification:", err);
+    res.status(500).json({ message: "Server error. Please try again later." });
   }
 };

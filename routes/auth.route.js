@@ -25,5 +25,10 @@ router.post("/change-password", authController.authMiddleware, authController.ch
 
 //deactive/delete route
 
-router.post("/delete-account", authController.authMiddleware, authController.deleteAccount);
+//router.post("/delete-account", authController.authMiddleware, authController.deleteAccount);
+
+router.post("/delete-otp", authController.authMiddleware, authController.sendDeleteOTP);
+
+router.post("/verify-delete-otp", authController.verifyOTPAndDelete);
+
 module.exports = router;

@@ -1,0 +1,24 @@
+Need to install the following packages:
+tree-node-cli@1.6.0
+Ok to proceed? (y) server
+├── controllers
+│   ├── auth.controller.js
+│   └── user.controller.js
+├── keepAlive.js
+├── middleware
+│   └── auth.middleware.js
+├── models
+│   ├── LoginAttempt.model.js
+│   ├── OTPVerification.model.js
+│   ├── session.model.js
+│   └── user.model.js
+├── om.js
+├── package-lock.json
+├── package.json
+├── routes
+│   ├── auth.route.js
+│   └── user.route.js
+├── server.js
+├── structure.txt
+└── utils
+    └── emailService.js

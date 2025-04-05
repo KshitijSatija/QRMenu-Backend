@@ -92,4 +92,23 @@ const sendOTPEmail = async (email, otp) => {
 };
 
 
-module.exports = { sendLoginConfirmation, sendRegistrationConfirmation,sendOTPEmail  };
+const sendDeleteOTPEmail = async (email, otp) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: 'Your OTP for Focus Bias Member Account Deletion',
+    text: `Your OTP for account deletion is ${otp}. This OTP is valid for 5 minutes.`,
+    html: `<p>Your OTP for account deletion is <strong>${otp}</strong>. This OTP is valid for 5 minutes.</p>`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`OTP sent to ${email}`);
+  } catch (error) {
+    console.error('Error sending OTP email:', error);
+    throw new Error('Failed to send OTP email');
+  }
+};
+
+
+module.exports = { sendLoginConfirmation, sendRegistrationConfirmation,sendOTPEmail, sendDeleteOTPEmail };
