@@ -27,13 +27,13 @@ const sendLoginConfirmation = async (email, username, firstName) => {
   const mailOptions = {
     from: process.env.EMAIL_USER,  // Sender address
     to: email,                    // Recipient address
-    subject: 'New sign in to your Focus Bias Member account',   // Subject of the email
-    text: `Hello ${firstName} (${username}),\n\nYou have successfully logged into your account on ${timestamp}.\nIf this was you, then you don't need to do anything.\nIf this was not you, please reset your password immediately.\n\nRegards,\nTeam Focus Bias Media`, // Plain text body
+    subject: 'New sign in to your QR Menu Member account',   // Subject of the email
+    text: `Hello ${firstName} (${username}),\n\nYou have successfully logged into your account on ${timestamp}.\nIf this was you, then you don't need to do anything.\nIf this was not you, please reset your password immediately.\n\nRegards,\nTeam QR Menu`, // Plain text body
     html: `<p>Hello <strong>${firstName}</strong> (${username}),</p>
            <p>You have successfully logged into your account on <strong>${timestamp}</strong>.</p>
            <p>If this was you, then you don't need to do anything.</p>
            <p>If this was not you, please <a href="">reset your password</a> immediately.</p>
-           <p>Regards,<br>Team Focus Bias Media</p>`, // HTML body for better formatting
+           <p>Regards,<br>Team QR Menu</p>`, // HTML body for better formatting
   };
 
   try {
@@ -54,12 +54,12 @@ const sendRegistrationConfirmation = async (email, username, firstName) => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
-    subject: 'Welcome to Focus Bias Member',
-    text: `Hi ${username},\n\nYou have successfully registered your account on ${timestamp}.\nWelcome to Focus Bias ${firstName}! We are excited to have you on board.\n\nRegards,\nTeam Focus Bias Media`,
+    subject: 'Welcome to QR Menu Member',
+    text: `Hi ${username},\n\nYou have successfully registered your account on ${timestamp}.\nWelcome to QR Menu ${firstName}! We are excited to have you on board.\n\nRegards,\nTeam QR Menu`,
     html: `<p>Hi <strong>${username}</strong>,</p>
            <p>You have successfully registered your account on <strong>${timestamp}</strong>.</p>
-           <p>Welcome to Focus Bias ${firstName}! We are excited to have you on board.</p>
-           <p>Regards,<br>Team Focus Bias Media</p>`,
+           <p>Welcome to QR Menu ${firstName}! We are excited to have you on board.</p>
+           <p>Regards,<br>Team QR Menu</p>`,
   };
 
   try {
@@ -77,7 +77,7 @@ const sendOTPEmail = async (email, otp) => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
-    subject: 'Your OTP for Focus Bias Member Registration',
+    subject: 'Your OTP for QR Menu Member Registration',
     text: `Your OTP for registration is ${otp}. This OTP is valid for 10 minutes.`,
     html: `<p>Your OTP for registration is <strong>${otp}</strong>. This OTP is valid for 10 minutes.</p>`,
   };
@@ -96,7 +96,7 @@ const sendDeleteOTPEmail = async (email, otp) => {
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
-    subject: 'Your OTP for Focus Bias Member Account Deletion',
+    subject: 'Your OTP for QR Menu Member Account Deletion',
     text: `Your OTP for account deletion is ${otp}. This OTP is valid for 5 minutes.`,
     html: `<p>Your OTP for account deletion is <strong>${otp}</strong>. This OTP is valid for 5 minutes.</p>`,
   };
@@ -110,5 +110,28 @@ const sendDeleteOTPEmail = async (email, otp) => {
   }
 };
 
+const sendContactFormConfirmation = async (email, firstName, company) => {
+  const timestamp = new Date().toLocaleString();
 
-module.exports = { sendLoginConfirmation, sendRegistrationConfirmation,sendOTPEmail, sendDeleteOTPEmail };
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: 'Thanks for contacting QR Menu',
+    text: `Hi ${firstName},\n\nThanks for reaching out to us at QR Menu on ${timestamp}.\nWe have received your message regarding your interest in QR Menu for your company "${company}".\n\nOur team will get back to you shortly.\n\nRegards,\nTeam QR Menu`,
+    html: `<p>Hi <strong>${firstName}</strong>,</p>
+           <p>Thanks for reaching out to us at <strong>QR Menu</strong> on <strong>${timestamp}</strong>.</p>
+           <p>We have received your message regarding your interest in QR Menu for your company "<strong>${company}</strong>".</p>
+           <p>Our team will get back to you shortly.</p>
+           <p>Regards,<br>Team QR Menu</p>`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    
+  } catch (error) {
+    
+    throw new Error('Failed to send contact confirmation email');
+  }
+};
+
+module.exports = { sendLoginConfirmation, sendRegistrationConfirmation,sendOTPEmail, sendDeleteOTPEmail, sendContactFormConfirmation };

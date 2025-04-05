@@ -1,7 +1,7 @@
 const axios = require("axios");
 require("dotenv").config();
 
-const backendUrl = process.env.BACKEND_URL || "https://thefocusbiasmediaproject-backend.onrender.com"; // Replace with actual Render backend URL
+const backendUrl = process.env.BACKEND_URL || "https://qrmenu-backend-zu98.onrender.com"; // Replace with actual Render backend URL
 
 const keepAlive = () => {
   setInterval(async () => {
