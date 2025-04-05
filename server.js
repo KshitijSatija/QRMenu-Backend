@@ -13,7 +13,7 @@ const contactRoutes= require("./routes/contact.route");
 const app = express();
 
 //middleware
-app.use(cors());
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(validateSession);
 
