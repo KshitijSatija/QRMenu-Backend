@@ -216,7 +216,7 @@ exports.getRecentLogs = async (req, res) => {
     const userId = req.user._id; // assuming auth middleware sets req.user
     const logs = await MenuLog.find({ userId }) // <- FIXED: userId, not user
       .sort({ timestamp: -1 })
-      .limit(2);
+      .limit(4);
 
     res.json({ logs });
   } catch (error) {
